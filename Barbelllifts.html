@@ -68,22 +68,17 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 <h1>Setup environment and Load data</h1>
 <p>For this assignment the Caret package is used. The Caret package also loads ggplot2 and lattice which helps with the graphical Analysis of data.</p>
 <p>Machine Learning can be quite time consuming therefore also doParallel package is used to speed up learning phase.</p>
-<pre class="r"><code>setwd(&quot;H:/Dev/Kurse/assignment&quot;)
-library(doParallel)</code></pre>
 <pre><code>## Warning: package 'doParallel' was built under R version 3.1.3</code></pre>
 <pre><code>## Loading required package: foreach</code></pre>
 <pre><code>## Warning: package 'foreach' was built under R version 3.1.3</code></pre>
 <pre><code>## Loading required package: iterators</code></pre>
 <pre><code>## Warning: package 'iterators' was built under R version 3.1.3</code></pre>
 <pre><code>## Loading required package: parallel</code></pre>
-<pre class="r"><code>library(caret)</code></pre>
 <pre><code>## Warning: package 'caret' was built under R version 3.1.3</code></pre>
 <pre><code>## Loading required package: lattice</code></pre>
 <pre><code>## Warning: package 'lattice' was built under R version 3.1.1</code></pre>
 <pre><code>## Loading required package: ggplot2</code></pre>
 <pre><code>## Warning: package 'ggplot2' was built under R version 3.1.1</code></pre>
-<pre class="r"><code>trainingData &lt;- read.csv(&quot;pml-training.csv&quot;)
-testingData &lt;- read.csv(&quot;pml-testing.csv&quot;)</code></pre>
 </div>
 <div id="data-preparation" class="section level1">
 <h1>Data Preparation</h1>
@@ -106,8 +101,8 @@ clean &lt;- clean[,-corFind]</code></pre>
 </div>
 <div id="prepare-cross-validation" class="section level1">
 <h1>Prepare Cross validation</h1>
-<p>First let split the data for later Cross validation. A factor of 60% for tetsing out-of-sample error is used</p>
-<pre class="r"><code>  inTrain &lt;- createDataPartition(y=clean$classe,p=0.1,list=FALSE)
+<p>First let split the data for later Cross validation. A factor of 60% for tetsing out-of-sample error is used. (Due memory I needed to restrict to 30%)</p>
+<pre class="r"><code>  inTrain &lt;- createDataPartition(y=clean$classe,p=0.3,list=FALSE)
   training &lt;- clean[inTrain,]
   test &lt;- clean[-inTrain,]</code></pre>
 </div>
@@ -129,72 +124,78 @@ clean &lt;- clean[,-corFind]</code></pre>
 ##   only 20 most important variables shown (out of 45)
 ## 
 ##                      Overall
-## pitch_forearm          100.0
-## yaw_belt                86.8
-## magnet_dumbbell_y       72.3
-## magnet_dumbbell_z       71.1
-## magnet_belt_y           64.2
-## pitch_belt              59.5
-## roll_forearm            52.3
-## magnet_belt_z           32.5
-## magnet_dumbbell_x       30.1
-## gyros_belt_z            26.8
-## roll_dumbbell           26.7
-## accel_dumbbell_y        26.3
-## accel_forearm_z         24.6
-## accel_forearm_x         23.6
-## accel_dumbbell_z        20.2
-## total_accel_belt        19.9
-## magnet_forearm_z        18.7
-## magnet_belt_x           17.8
-## accel_dumbbell_x        14.6
-## total_accel_dumbbell    14.1</code></pre>
+## yaw_belt               100.0
+## pitch_forearm           85.1
+## magnet_dumbbell_z       69.3
+## pitch_belt              64.7
+## magnet_dumbbell_y       48.2
+## magnet_belt_y           48.1
+## roll_forearm            41.7
+## gyros_belt_z            32.9
+## magnet_belt_z           30.8
+## roll_dumbbell           28.0
+## magnet_dumbbell_x       24.4
+## accel_forearm_x         24.4
+## accel_dumbbell_y        22.6
+## magnet_belt_x           19.6
+## accel_forearm_z         18.8
+## accel_dumbbell_z        18.3
+## magnet_forearm_z        16.0
+## total_accel_dumbbell    15.9
+## total_accel_belt        15.7
+## roll_arm                12.6</code></pre>
 </div>
 <div id="predicting-data-and-validation" class="section level1">
 <h1>Predicting data and validation</h1>
 <p>First predict on the data saved for Cross validation.</p>
 <pre class="r"><code>  pred &lt;- predict(modelFit,test)</code></pre>
 <p>Checking the confusion matrix to determine out of sample error</p>
-<pre class="r"><code>  confusionMatrix(pred,test$classe)</code></pre>
+<pre class="r"><code>  cm &lt;- confusionMatrix(pred,test$classe)
+  cm</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 4935  212    6    4    6
-##          B   30 3009  113   19   49
-##          C   40  150 2903  190   45
-##          D   16   32   53 2670   42
-##          E    1   14    4   11 3104
+##          A 3891   53    0    4    0
+##          B    1 2566   42    0    3
+##          C    6   28 2335   54    8
+##          D    6   10   16 2188   19
+##          E    2    0    2    5 2494
 ## 
 ## Overall Statistics
 ##                                         
-##                Accuracy : 0.941         
-##                  95% CI : (0.938, 0.945)
+##                Accuracy : 0.981         
+##                  95% CI : (0.979, 0.983)
 ##     No Information Rate : 0.284         
 ##     P-Value [Acc &gt; NIR] : &lt;2e-16        
 ##                                         
-##                   Kappa : 0.926         
+##                   Kappa : 0.976         
 ##  Mcnemar's Test P-Value : &lt;2e-16        
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity             0.983    0.881    0.943    0.923    0.956
-## Specificity             0.982    0.985    0.971    0.990    0.998
-## Pos Pred Value          0.956    0.934    0.872    0.949    0.990
-## Neg Pred Value          0.993    0.972    0.988    0.985    0.990
-## Prevalence              0.284    0.194    0.174    0.164    0.184
-## Detection Rate          0.279    0.170    0.164    0.151    0.176
-## Detection Prevalence    0.292    0.182    0.188    0.159    0.177
-## Balanced Accuracy       0.982    0.933    0.957    0.956    0.977</code></pre>
-<p>Having no errors at all, the out-os sample error is 0</p>
+## Sensitivity             0.996    0.966    0.975    0.972    0.988
+## Specificity             0.994    0.996    0.992    0.996    0.999
+## Pos Pred Value          0.986    0.982    0.961    0.977    0.996
+## Neg Pred Value          0.998    0.992    0.995    0.995    0.997
+## Prevalence              0.284    0.193    0.174    0.164    0.184
+## Detection Rate          0.283    0.187    0.170    0.159    0.182
+## Detection Prevalence    0.287    0.190    0.177    0.163    0.182
+## Balanced Accuracy       0.995    0.981    0.983    0.984    0.994</code></pre>
+<p>Based on the confusion Matrix caculate the out of sample error</p>
+<pre class="r"><code>s &lt;- sum(cm$table)
+c &lt;- cm$table[1,1] + cm$table[2,2] + cm$table[3,3] +cm$table[4,4] + cm$table[5,5]
+s/c</code></pre>
+<pre><code>## [1] 1.019</code></pre>
+<p>The out of sample error is approx. 0.98, which is due to the reduced training set</p>
 </div>
-<div id="final-test-prdiction" class="section level1">
-<h1>Final test prdiction</h1>
+<div id="final-test-prediction" class="section level1">
+<h1>Final test prediction</h1>
 <p>Now let’s run the final test.</p>
 <pre class="r"><code>predTest &lt;- predict(modelFit,testingData)
 predTest</code></pre>
-<pre><code>##  [1] B A A A A E D D A A B C B A E E A B B B
+<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
 </div>
 

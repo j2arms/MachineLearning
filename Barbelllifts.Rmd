@@ -14,7 +14,7 @@ For this assignment the Caret package is used. The Caret package also loads ggpl
 
 Machine Learning can be quite time consuming therefore also doParallel package is used to speed up learning phase. 
 
-```{r, echo=FALSE}
+```{r,echo=FALSE}
 setwd("H:/Dev/Kurse/assignment")
 library(doParallel)
 library(caret)
