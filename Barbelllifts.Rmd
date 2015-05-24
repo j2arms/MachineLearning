@@ -14,7 +14,7 @@ For this assignment the Caret package is used. The Caret package also loads ggpl
 
 Machine Learning can be quite time consuming therefore also doParallel package is used to speed up learning phase. 
 
-```{r,echo=FALSE}
+```{r, echo=FALSE,error=FALSE,warning=FALSE}
 setwd("H:/Dev/Kurse/assignment")
 library(doParallel)
 library(caret)
@@ -65,7 +65,7 @@ First let split the data for later Cross validation. A factor of 60% for tetsing
 Random tree is not biased. To speed up model fitting Parallel execution is used  
 
 ```{r}
-  registerDoParallel(3,cores=3)
+  registerDoParallel(4,cores=4)
   getDoParWorkers()
   modelFit <- train(classe ~.,data=training,method="rf",prox=TRUE)
 ```
