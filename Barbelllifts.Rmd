@@ -1,0 +1,102 @@
+---
+title: "Barbell Lifts prediction"
+output: html_document
+---
+# Anaylsis of correct excuction of Barebell lifts
+## Intrduction
+The objective of this anaylsisis to predict if a barebell lift is executed correctly or if there were some mistakes during execution. 
+
+Provided is a set of nearly 20,000 observation in 160 variable, which can be found here: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv and is provided by:  http://groupware.les.inf.puc-rio.br/har
+Also a test set woth 20 observation was provided: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+# Setup environment and Load data 
+For this assignment the Caret package is used. The Caret package also loads ggplot2 and lattice which helps with the graphical Analysis of data. 
+
+Machine Learning can be quite time consuming therefore also doParallel package is used to speed up learning phase. 
+
+```{r, echo=FALSE}
+setwd("H:/Dev/Kurse/assignment")
+library(doParallel)
+library(caret)
+trainingData <- read.csv("pml-training.csv")
+testingData <- read.csv("pml-testing.csv")
+```
+# Data Preparation
+
+Viewing data shows that there are some columns which mainly consists of "NA" and empty values. Those data cannot contribute to the result but comsume time during training. Only those variables are used which contribute to at least half of all results 
+
+Also all factor variables which are not coming from sensors arte cleaned
+
+```{r}
+cleanNA <- as.vector(apply(trainingData,2,function(x) min(length(which(!is.na(x))))))
+clean1 <- trainingData[,cleanNA > (nrow(trainingData)/2)]
+cleanEmpty <- as.vector(apply(clean1,2,function(x) nrow(clean1) - sum(x == "")))
+clean2 <- clean1[,cleanEmpty > (nrow(trainingData)/2)]
+clean <- clean2[,c(-1,-2,-3,-4,-5,-6,-7,-8)]
+```
+Find and remove highly correlated varaibles to avoid that the same underlying fact is used several times.
+
+```{r}
+corTrain <- cor(clean[,-(length(clean))])
+corFind <- findCorrelation(corTrain,cutoff = .9, verbose=FALSE)
+clean <- clean[,-corFind]
+```
+Now let inspect the variable and their relationship to the outcome visually, which is not easy with 46 varaibale.
+
+```{r}
+featurePlot(x = clean[,-length(clean)], y = clean$classe, plot = "box",
+                      scales = list(y = list(relation="free"), x = list(rot = 90)),
+                      layout = c(5,9 ))
+```
+Some variables shows an indication of certain classes, e.g. if accel_arm_x is low than it seems to be related to classe 'A', but there is no obvious variable which can do the prediction. 
+Important to note is that the variables seems to be more or less balanced. This will allow to use random forrests
+
+# Prepare Cross validation
+First let split the data for later Cross validation. A factor of 60% for tetsing out-of-sample error is used. (Due memory I needed to restrict to 30%)
+
+```{r}
+  inTrain <- createDataPartition(y=clean$classe,p=0.3,list=FALSE)
+  training <- clean[inTrain,]
+  test <- clean[-inTrain,]
+```
+
+# Train the model
+
+Random tree is not biased. To speed up model fitting Parallel execution is used  
+
+```{r}
+  registerDoParallel(3,cores=3)
+  getDoParWorkers()
+  modelFit <- train(classe ~.,data=training,method="rf",prox=TRUE)
+```
+Check the importance of variables
+```{r}
+varImp(modelFit)
+```
+  
+# Predicting data and validation
+First predict on the data saved for Cross validation. 
+```{r}
+  pred <- predict(modelFit,test)
+```
+ Checking the confusion matrix to determine out of sample error
+```{r}
+  cm <- confusionMatrix(pred,test$classe)
+  cm
+```
+
+Based on the confusion Matrix caculate the out of sample error
+```{r}
+s <- sum(cm$table)
+c <- cm$table[1,1] + cm$table[2,2] + cm$table[3,3] +cm$table[4,4] + cm$table[5,5]
+s/c
+```
+The out of sample error is approx. 0.98, which is due to the reduced training set
+
+# Final test prediction
+Now let's run the final test.
+
+```{r}
+predTest <- predict(modelFit,testingData)
+predTest
+```
